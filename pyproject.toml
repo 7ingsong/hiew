@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hiew-py"
+version = "1.0"
+description = "Hiew - cross-platform Hacker's View: hex viewer, editor and disassembler for the terminal"
+requires-python = ">=3.8"
+dependencies = [
+    "capstone>=5",
+    "windows-curses>=2.3; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+asm = ["keystone-engine"]
+
+[project.scripts]
+hiew = "hiew.__main__:main"
+
+[tool.setuptools]
+packages = ["hiew"]
