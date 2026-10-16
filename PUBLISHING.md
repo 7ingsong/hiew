@@ -2,7 +2,22 @@
 
 The package name on PyPI is `hiew`; the command it installs is also `hiew`.
 
-## One-time setup
+## Release from GitHub Actions
+
+`.github/workflows/publish.yml` builds and checks the package on every push and pull request. A tag `v<version>`
+also publishes it to PyPI:
+
+```sh
+# bump __version__ in hiew/__init__.py, commit, then
+git tag v1.0.2 && git push origin main v1.0.2
+```
+
+The tag must equal `__version__`, otherwise the job fails before publishing.
+
+One-time setup: on <https://pypi.org/manage/project/hiew/settings/publishing/> add a trusted publisher —
+owner `7ingsong`, repository `hiew`, workflow `publish.yml`, environment `pypi`. No API token is stored in GitHub.
+
+## Manual release: one-time setup
 
 1. Create accounts on <https://pypi.org> and <https://test.pypi.org> (they are separate) and enable 2FA.
 2. On each site create an API token: Account settings → API tokens → "Entire account" for the first upload
