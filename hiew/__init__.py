@@ -1,2 +1,2 @@
 """Hiew - cross-platform Hacker's View: hex viewer, editor and disassembler."""
-__version__ = '1.0.1'
+__version__ = '1.0.2'
