@@ -24,106 +24,106 @@ KEYBARS = {
 }
 
 HELP = """\
- Hiew %s - кроссплатформенный Hacker's View. Клавиши по https://taviso.github.io/hiewdocs/
+ Hiew %s - cross-platform Hacker's View. Keys follow https://taviso.github.io/hiewdocs/
 
- РЕЖИМЫ
-   Enter                  Text -> Hex -> Code -> Text (адрес сохраняется)
-   F4                     меню режимов, архитектур, кодировок и тем оформления (hiew, blue,
-                          dark, light - сохраняется); для universal (fat) Mach-O - выбор среза
-   F3                     режим правки (EDITMODE), Esc - выйти без записи, F9 - записать
-   Ctrl+F1                разрядность кода: 16 / 32 / 64 бита
-   Shift+F1               архитектура (x86, ARM, ARM64, MIPS, PPC, RISC-V)
-   Alt+F1                 адреса: смещение в файле <-> виртуальный (.VA)
+ MODES
+   Enter                  Text -> Hex -> Code -> Text (address is kept)
+   F4                     menu of modes, architectures, encodings and colour themes (hiew,
+                          blue, dark, light - remembered); universal (fat) Mach-O - pick slice
+   F3                     edit mode (EDITMODE), Esc - leave without saving, F9 - save
+   Ctrl+F1                code bitness: 16 / 32 / 64 bit
+   Shift+F1               architecture (x86, ARM, ARM64, MIPS, PPC, RISC-V)
+   Alt+F1                 addresses: file offset <-> virtual (.VA)
 
- НАВИГАЦИЯ
-   Ctrl+Home / Ctrl+End   начало / конец файла
-   F5                     переход: 1234 (hex), 123t (dec), .401000 (VA), +100, -10t, имя;
-                          PgDn в диалоге - история
-   F6 / Ctrl+F6           (Code) ссылка на текущий адрес / следующая ссылка
-   1..9, A..Z             (Code) перейти по помеченному переходу (--v1)
-   /                      (Code) пересинхронизировать дизассемблер с курсора
-   BkSp                   вернуться назад
-   Shift+F9/F10/F11       перейти по dword / qword / word под курсором
-   Alt+F11 / Alt+F12      перейти по word / dword под курсором
+ NAVIGATION
+   Ctrl+Home / Ctrl+End   start / end of file
+   F5                     goto: 1234 (hex), 123t (dec), .401000 (VA), +100, -10t, name;
+                          PgDn in the dialog - history
+   F6 / Ctrl+F6           (Code) references to current address / next reference
+   1..9, A..Z             (Code) follow the labelled jump (--v1)
+   /                      (Code) resync the disassembler at the cursor
+   BkSp                   go back
+   Shift+F9/F10/F11       jump to dword / qword / word under cursor
+   Alt+F11 / Alt+F12      jump to word / dword under cursor
 
- ЗАКЛАДКИ (8 на каждый режим, индикатор в строке состояния)
-   +                      сохранить позицию
-   -                      вернуться к текущей закладке (отмечена ♦)
-   Alt+1..Alt+8           перейти к закладке по номеру
-   Alt+-                  удалить текущую закладку
-   Alt+0                  удалить все закладки
+ BOOKMARKS (8 per mode, indicator in the status line)
+   +                      save position
+   -                      return to the current bookmark (marked ♦)
+   Alt+1..Alt+8           go to bookmark by number
+   Alt+-                  delete the current bookmark
+   Alt+0                  delete all bookmarks
 
- БЛОКИ
-   *                      начать блок, двигать курсор (можно F5, F7, Ctrl+End...), * - конец;
-                          * на готовом блоке - снять выделение
-   Shift+стрелки          выделить блок от курсора
-   Ctrl+*                 весь файл - блок
-   Alt+*                  перенести начало блока к курсору
-   [ / ]                  к началу / концу блока
-   Ins                    режим блоковых операций: вставка (файл растёт) / замена
-   F2                     записать блок в файл (PutBlk)
-   Ctrl+F2                прочитать файл в позицию (вставка или замена)
-   Alt+F2                 заполнить блок шаблоном; в Code без блока - NOP инструкции
-   Alt+F3                 Crypt: процедура на x86-подмножестве для блока
-   Shift+F2               удалить блок из файла
-   Shift+F3               вставить N нулевых байт
-   Shift+F4               напечатать блок (hex-дамп) в файл или буфер обмена
-   Shift+F5 / Shift+F6    копировать / переместить блок к курсору
-   Alt+M / Shift+Alt+M    раскрасить блок (выбор цвета / случайный), .cmarkers
-   Alt+N / Shift+Alt+N    к следующему / предыдущему раскрашенному блоку
+ BLOCKS
+   *                      start a block, move the cursor (F5, F7, Ctrl+End... work), * - end;
+                          * on a finished block - clear the selection
+   Shift+arrows           select a block from the cursor
+   Ctrl+*                 whole file as a block
+   Alt+*                  move block start to the cursor
+   [ / ]                  to block start / end
+   Ins                    block operation mode: insert (file grows) / overwrite
+   F2                     write block to a file (PutBlk)
+   Ctrl+F2                read a file into the position (insert or overwrite)
+   Alt+F2                 fill block with a pattern; in Code without a block - NOPs
+   Alt+F3                 Crypt: x86-subset routine applied to the block
+   Shift+F2               delete block from the file
+   Shift+F3               insert N zero bytes
+   Shift+F4               print block (hex dump) to a file or the clipboard
+   Shift+F5 / Shift+F6    copy / move block to the cursor
+   Alt+M / Shift+Alt+M    colour the block (pick colour / random), .cmarkers
+   Alt+N / Shift+Alt+N    to next / previous coloured block
 
- ПОИСК
-   F7                     поиск. В диалоге: Tab - Hex/ASCII, F2 - направление,
-                          F3 - регистр, F4 - файл/блок, F6 - UTF-16 чёт/нечёт,
-                          F7 - найти инструкцию (ассемблер), Alt+? - любой символ,
-                          в Hex ?? - любой байт; >3 не-hex символов -> ASCII
-   Ctrl+Enter, Shift+F7   следующее совпадение (без поиска - откроет диалог)
-   Alt+F7                 сменить направление (стрелка в строке состояния)
-   Alt+F8                 таблица символов: кодировка, UTF-16 (unicode)
-   Alt+F6                 строки: +/- длина, F6 тип (ASCII, UTF-16 чёт/нечёт),
-                          F2 смещения, F9 фильтр, ввод текста - фильтр
-   Ctrl+F3                поиск и замена (Y / N / A)
+ SEARCH
+   F7                     search. In the dialog: Tab - Hex/ASCII, F2 - direction,
+                          F3 - case, F4 - file/block, F6 - UTF-16 even/odd,
+                          F7 - find instruction (assembler), Alt+? - any char,
+                          in Hex ?? - any byte; >3 non-hex chars -> ASCII
+   Ctrl+Enter, Shift+F7   next match (with no prior search - opens the dialog)
+   Alt+F7                 toggle direction (arrow in the status line)
+   Alt+F8                 character table: encoding, UTF-16 (unicode)
+   Alt+F6                 strings: +/- length, F6 type (ASCII, UTF-16 even/odd),
+                          F2 offsets, F9 filter, typing text - filter
+   Ctrl+F3                search and replace (Y / N / A)
 
- ПРАВКА (F3)
-   0-9 A-F                hex; Tab - Hex <-> символы (Hex) или ассемблер по строкам (Code)
-   F2, Enter (Code)       ассемблер (числа - hex, 10t - десятичное); в Code команду можно
-                          сразу набирать с буквы g-z (nop, mov, jmp), a-f - это hex-цифры
-   F3                     вернуть исходный байт       Ctrl+Z - отменить последнее
-   F4 / F5 / F6           биты byte / word / dword
-   F7, Ctrl+F7            Crypt под курсором / задать процедуру
-   F8, Ctrl+F8            XOR / задать ключ
-   Alt+F2                 NOP-ы на текущую инструкцию или заполнить блок
-   F10                    обрезать файл по курсору
-   F9 / Esc               записать / отменить
+ EDITING (F3)
+   0-9 A-F                hex; Tab - Hex <-> chars (Hex) or line assembler (Code)
+   F2, Enter (Code)       assembler (numbers are hex, 10t - decimal); in Code you can
+                          start typing a command with g-z (nop, mov, jmp), a-f are hex digits
+   F3                     restore original byte       Ctrl+Z - undo last change
+   F4 / F5 / F6           bits of byte / word / dword
+   F7, Ctrl+F7            Crypt at cursor / define routine
+   F8, Ctrl+F8            XOR / set key
+   Alt+F2                 NOP the current instruction or fill the block
+   F10                    truncate file at the cursor
+   F9 / Esc               save / cancel
 
- ФАЙЛЫ, ИМЕНА
-   F9                     открыть файл          Tab - следующий открытый файл
-   Ctrl+F11 / Ctrl+F12    предыдущий / следующий файл из командной строки
-   Ctrl+BkSp              список открытых файлов (Enter, Del)
-   Alt+F10                закрыть файл и вернуться к предыдущему
-   Alt+F4, Ctrl+F4        перечитать файл
-   F8                     заголовок; в нём F5 - вход, F6 - секции, F7 - импорт,
-                          Enter на строке среза fat-файла - переключиться на него
-                          (Enter - искать вызовы, Ctrl+Enter - дальше), F9 - экспорт
-   F12                    имена и комментарии; в окне F12 - импорт, Shift+F12 - экспорт
-   Shift+F12              назвать текущее место          ; - комментарий
-                          (имена и комментарии сохраняются в <файл>.hnames)
+ FILES, NAMES
+   F9                     open file             Tab - next open file
+   Ctrl+F11 / Ctrl+F12    previous / next file from the command line
+   Ctrl+BkSp              list of open files (Enter, Del)
+   Alt+F10                close file and return to the previous one
+   Alt+F4, Ctrl+F4        reload file
+   F8                     header; in it F5 - entry, F6 - sections, F7 - imports,
+                          Enter on a fat-file slice line - switch to it
+                          (Enter - find calls, Ctrl+Enter - next), F9 - exports
+   F12                    names and comments; in the F12 window - import, Shift+F12 - export
+   Shift+F12              name the current location     ; - comment
+                          (names and comments are saved to <file>.hnames)
 
- РАЗНОЕ
-   Alt+=                  калькулятор: hex по умолчанию, 10t, 17o, 101i, @b @w @d @q
-                          (@B... без знака), @o / @O адрес / смещение, Up/Down двигают окно
-   Alt+P                  снимок экрана в файл или буфер обмена
-   Alt+B                  звук вкл/выкл
-   Ctrl+Alt (держать)     сведения о файле и системе (Alt+I - то же окном)
-   Ctrl+. / Ctrl+0..8     записать макрос / проиграть;  Ctrl+- - список макросов
-   Esc                    выход без изменения времени файла;  F10 - выход с обновлением
-   F11                    модули HEM не поддерживаются
+ MISC
+   Alt+=                  calculator: hex by default, 10t, 17o, 101i, @b @w @d @q
+                          (@B... unsigned), @o / @O address / offset, Up/Down move the window
+   Alt+P                  screenshot to a file or the clipboard
+   Alt+B                  sound on/off
+   Ctrl+Alt (hold)        file and system info (Alt+I - same in a window)
+   Ctrl+. / Ctrl+0..8     record macro / play;  Ctrl+- - macro list
+   Esc                    quit without touching the file time;  F10 - quit and update it
+   F11                    HEM modules are not supported
 
- ЕСЛИ ТЕРМИНАЛ НЕ ПЕРЕДАЁТ КОМБИНАЦИИ
-   Ctrl+X, затем клавиша  липкий модификатор: Ctrl+X по кругу Alt -> Ctrl -> Shift;
-                          нижняя панель показывает подписи слоя
-   Esc, затем клавиша     в течение 0.5 с - то же, что Alt+клавиша
-   нижняя панель          при зажатом Alt/Ctrl/Shift показывает подписи слоя
+ IF THE TERMINAL DOES NOT PASS KEY COMBINATIONS
+   Ctrl+X, then a key     sticky modifier: Ctrl+X cycles Alt -> Ctrl -> Shift;
+                          the bottom bar shows that layer's labels
+   Esc, then a key        within 0.5 s - same as Alt+key
+   bottom bar             shows the layer's labels while Alt/Ctrl/Shift is held
 """ % VERSION
 
 
