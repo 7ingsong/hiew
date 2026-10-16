@@ -7,6 +7,8 @@ import sys
 
 def main(argv=None):
     p = argparse.ArgumentParser(prog='hiew', description="Hiew - cross-platform Hacker's View: hex viewer, editor and disassembler")
+    from . import __version__
+    p.add_argument('-V', '--version', action='version', version='%(prog)s ' + __version__)
     p.add_argument('files', nargs='*', help='file(s) to open; Ctrl+F11 / Ctrl+F12 switch between them')
     p.add_argument('--keys', action='store_true', help='key test: show how key presses are recognised')
     p.add_argument('-m', '--mode', choices=('text', 'hex', 'decode'), help='start mode')
@@ -57,7 +59,7 @@ def main(argv=None):
 
     def run(scr):
         try:
-            curses.set_escdelay(25)
+            curses.set_escdelay(25)  # novermin (Python 3.9+, guarded)
         except Exception:
             pass
         try:

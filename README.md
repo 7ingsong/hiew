@@ -3,25 +3,32 @@
 A console hex viewer, hex editor and disassembler with the modes, hotkeys and blue screen of **Hiew (Hacker's View)**.
 Runs on macOS, Linux and Windows.
 
-![Decode mode: arm64 code of /bin/ls](docs/decode.png)
+![Decode mode: arm64 code of /bin/ls](https://raw.githubusercontent.com/7ingsong/hiew/main/docs/decode.png)
 
 *Decode mode on `/bin/ls` (arm64 slice of a universal Mach-O), at the entry point.*
 
-![Hex mode: symbol strings of /bin/ls](docs/hex.png)
+![Hex mode: symbol strings of /bin/ls](https://raw.githubusercontent.com/7ingsong/hiew/main/docs/hex.png)
 
 *Hex mode on the same file: address, 16 bytes in hex, the same bytes as characters.*
 
 ## Installation
 
-Requires Python 3.8+.
+Requires Python 3.9+.
 
 ```sh
-pip install .                    # macOS / Linux / Windows (windows-curses is pulled in on Windows)
-brew install keystone            # assembler (F3 → F2) on macOS; Linux: libkeystone, Windows: pip install keystone-engine
+pip install hiew                 # macOS / Linux / Windows (windows-curses is pulled in on Windows)
 hiew file.exe
 ```
 
-Without installing: `pip install capstone` (plus `windows-curses` on Windows), then `python -m hiew file`.
+The built-in assembler (F3 → F2) needs the keystone library:
+
+| System | Command |
+|---|---|
+| macOS | `brew install keystone` |
+| Linux | `apt install libkeystone0` (or your distribution's keystone package) |
+| Windows | `pip install "hiew[asm]"` (installs `keystone-engine`) |
+
+Everything else works without it. From a source checkout: `pip install .`, or `python -m hiew file`.
 
 Command-line options:
 

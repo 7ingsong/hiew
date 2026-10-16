@@ -10,7 +10,7 @@ from .extra import ExtraMixin
 from .formats import analyze
 from .mods import ModWatcher, kitty_disable, kitty_enable, translate
 
-VERSION = '1.0'
+from . import __version__ as VERSION
 MODES = ('text', 'hex', 'decode')
 ENCODINGS = ('utf-8', 'cp437', 'cp866', 'cp1251', 'koi8_r', 'latin-1')
 TEXT_LINE_MAX = 0x4000

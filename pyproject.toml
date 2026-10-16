@@ -1,12 +1,37 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hiew-py"
-version = "1.0"
+name = "hiew"
+dynamic = ["version"]
 description = "Hiew - cross-platform Hacker's View: hex viewer, editor and disassembler for the terminal"
-requires-python = ">=3.8"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "s1ngs0ng", email = "7ingsong@gmail.com"}]
+requires-python = ">=3.9"
+keywords = ["hiew", "hex", "hex-editor", "hex-viewer", "disassembler", "reverse-engineering", "pe", "elf",
+            "mach-o", "curses", "tui"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console :: Curses",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Disassemblers",
+    "Topic :: Utilities",
+]
 dependencies = [
     "capstone>=5",
     "windows-curses>=2.3; sys_platform == 'win32'",
@@ -15,8 +40,17 @@ dependencies = [
 [project.optional-dependencies]
 asm = ["keystone-engine"]
 
+[project.urls]
+Homepage = "https://github.com/7ingsong/hiew"
+Source = "https://github.com/7ingsong/hiew"
+Issues = "https://github.com/7ingsong/hiew/issues"
+Documentation = "https://github.com/7ingsong/hiew#readme"
+
 [project.scripts]
 hiew = "hiew.__main__:main"
 
 [tool.setuptools]
 packages = ["hiew"]
+
+[tool.setuptools.dynamic]
+version = {attr = "hiew.__version__"}
