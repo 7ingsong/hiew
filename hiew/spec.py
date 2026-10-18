@@ -239,6 +239,10 @@ class Hiew(App):
 
     def load(self, path, first=False):
         App.load(self, path, first)
+        if self.info.dotnet_job is not None and K.READ_TIMEOUT < 0:
+            K.READ_TIMEOUT = 200            # wake up to merge the background .NET metadata
+            self.scr.timeout(200)
+            self._job_timeout = True
         p = self.buf.path
         if p not in self.files:
             self.files.append(p)
@@ -334,7 +338,30 @@ class Hiew(App):
             return layer + '-' + k
         return k
 
+    def ensure_dotnet(self, wait=False):
+        """Merge .NET metadata read in the background; with wait=True block until it is there."""
+        job = getattr(self.info, 'dotnet_job', None)
+        if job is None or job.merged:
+            return
+        if wait and not job.done:
+            self.flash('Reading .NET metadata ...')
+            merged = job.wait()
+            self.msg = None
+        else:
+            merged = job.merge()
+        if merged:
+            self._names = {}
+            self._byname = None
+            if getattr(self, '_job_timeout', False):
+                K.READ_TIMEOUT = -1
+                self.scr.timeout(-1)
+                self._job_timeout = False
+            if not wait and self._in_main:
+                self.set_msg('.NET metadata loaded (F8 header, F4 resources, F12 names)')
+                self.draw()
+
     def refresh_mods(self):
+        self.ensure_dotnet()
         App.refresh_mods(self)
         held = self.held_mods()
         both = 'C' in held and 'A' in held
@@ -450,6 +477,7 @@ class Hiew(App):
         return ('%s ; %s' % (c, base) if base else c) if c else base
 
     def parse_target(self, s):
+        self.ensure_dotnet(wait=True)
         s = s.strip()
         for off, n in self.unames.items():
             if n == s:
@@ -484,6 +512,7 @@ class Hiew(App):
     # ---------------------------------------------------------- key dispatch (view mode)
 
     def handle_view_extra(self, k):
+        self.ensure_dotnet()
         m = self.mode
         pos = self.position()
         simple = {
@@ -1366,16 +1395,18 @@ class Hiew(App):
     # ---------------------------------------------------------- header sub-tables (F8 then F5/F6/F7/F9)
 
     def header_window(self):
+        self.ensure_dotnet(wait=True)
         info = self.info
         items = [('File: %s' % self.buf.path, None), ('Size: %s' % nbytes(self.buf.size), None)]
         if info.entry_off is not None:
             items.append(('Entry point %s   (F5)' % self.fmt_addr(info.entry_off), (info.entry_off, 'decode')))
-        items.append(('Sections F6   Imports F7   Exports F9', None))
+        items.append(('Sections F6   Imports F7   Exports F9' +
+                      ('   Resources F4' if info.pe_resources or info.dotnet_resources else ''), None))
         items.append(('', None))
         items += info.header or [('Unknown format: raw binary', None)]
         while True:
             r = self.list_dialog('Header %s' % (info.desc or ''), items, sel=2 if info.entry_off is not None else 0,
-                                 extra_keys=('F5', 'F6', 'F7', 'F9'))
+                                 extra_keys=('F4', 'F5', 'F6', 'F7', 'F9'))
             if isinstance(r, tuple) and r[0] == '__key__':
                 k = r[1]
                 if k == 'F5':
@@ -1384,7 +1415,8 @@ class Hiew(App):
                         return
                     self.goto(info.entry_off, 'decode')
                     return
-                sub = {'F6': self.sections_list, 'F7': self.imports_list, 'F9': self.exports_list}[k]()
+                sub = {'F4': self.resources_list, 'F6': self.sections_list, 'F7': self.imports_list,
+                       'F9': self.exports_list}[k]()
                 if sub == 'done':
                     return
                 continue
@@ -1434,6 +1466,221 @@ class Hiew(App):
             self.set_mode(r)
         elif isinstance(r, int):
             self.switch_slice(r)
+
+    # ---------------------------------------------------------- resources window (F8 -> F4)
+    # Rows are keys: ('pe', i) Windows .rsrc resource, ('res', i) .NET resource, ('ent', i, j) entry of a
+    # .NET .resources set. Enter goes to the data (marked as a block), F2 saves the selected item, F3 all.
+
+    def _resource_rows(self):
+        """.NET resources first (for an assembly they matter most), then the Windows .rsrc tree with a one-line
+        summary per resource (F4 shows the decoded details)."""
+        items = []
+        pe_res, net_res = self.info.pe_resources, self.info.dotnet_resources
+        net_problem = [t for t, _ in self.info.header if t.startswith('.NET') and
+                       ('could not' in t or 'unreadable' in t or 'install dnfile' in t)]
+        if net_res or net_problem:
+            items.append(('.NET resources: %d' % len(net_res), None))
+            for t in net_problem:
+                items.append(('  ' + t, None))
+            for i, r in enumerate(net_res):
+                where = '.%08X' % r['va'] if r['va'] is not None else 'external'
+                items.append(('%s  %8Xh  %s%s' % (where, r['size'], r['name'], '' if r['public'] else '  (private)'),
+                              ('res', i)))
+                for j, e in enumerate(r['entries']):
+                    if e['value'] is not None:
+                        t = e['value'].replace('\r', '\\r').replace('\n', '\\n').replace('\t', ' ')
+                        shown = '"%s"' % (t[:56] + ('...' if len(t) > 56 else ''))
+                    else:
+                        shown = '%s%s' % (e['type'], '  %Xh bytes' % len(e['data']) if e['data'] else '')
+                    items.append(('      %-34s %s' % (e['name'], shown), ('ent', i, j)))
+        if pe_res:
+            if items:
+                items.append(('', None))
+            items.append(('Windows resources (.rsrc): %d   (F4 - details)' % len(pe_res), None))
+            for i, r in enumerate(pe_res):
+                name = r['name'] if r['name'] is not None else '-'
+                lang = r['lang'] if r['lang'] is not None else '-'
+                where = '.%08X' % (self.info.base + r['rva'])
+                items.append(('%-16s %-10s %-6s %s %8Xh  %s' % (r['label'], name, lang, where, r['size'],
+                                                              self._rsrc_summary(r)), ('pe', i)))
+        return items
+
+    @staticmethod
+    def _rsrc_summary(r):
+        """one line describing a Windows resource"""
+        lines = r.get('lines') or []
+        if not lines:
+            return ''
+        if len(lines) == 1:
+            return lines[0]
+        label = r['label']
+        if label == 'RT_VERSION':
+            vals = dict((l[:22].strip(), l[22:].strip()) for l in lines)
+            parts = [vals.get('FileVersion') or vals.get('FileVersion (fixed)', ''),
+                     vals.get('FileDescription') or vals.get('ProductName', ''), vals.get('CompanyName', '')]
+            return ', '.join(p for p in parts if p)
+        if label in ('RT_GROUP_ICON', 'RT_GROUP_CURSOR'):
+            return '%d images: %s' % (len(lines), ' '.join(l.split(',')[0] for l in lines))
+        if label == 'RT_STRING':
+            return '%d strings: %s' % (len(lines), lines[0])
+        return '%s ... (%d lines)' % (lines[0].strip(), len(lines))
+
+    def resource_details(self, key):
+        """F4 in the resources window: the decoded lines of a resource / the text of an entry"""
+        if key is None:
+            return
+        if key[0] == 'pe':
+            r = self.info.pe_resources[key[1]]
+            lines = r.get('lines') or ['(no decoded view - Enter shows the bytes)']
+            self.list_dialog('%s %s' % (r['label'], r['name']), [(l, None) for l in lines])
+        elif key[0] == 'ent':
+            e = self.info.dotnet_resources[key[1]]['entries'][key[2]]
+            text = e['value'] if e['value'] is not None else '%s, %s' % (e['type'], nbytes(len(e['data'] or b'')))
+            self.list_dialog(e['name'], [(l, None) for l in text.splitlines() or ['']])
+        else:
+            r = self.info.dotnet_resources[key[1]]
+            self.list_dialog(r['name'], [('%s, %s, %d entries' % (r['name'], nbytes(r['size']), len(r['entries'])),
+                                          None)])
+
+    def resources_list(self):
+        self.ensure_dotnet(wait=True)
+        items = self._resource_rows()
+        if not items:
+            self.set_msg('No resources in this file')
+            return None
+        sel = next((n for n, it in enumerate(items) if it[1] is not None), 0)
+        while True:
+            r = self.list_dialog('Resources: Enter - go to data, F2 - save, F3 - save all, F4 - details', items,
+                                 sel=sel, extra_keys=('F2', 'F3', 'F4'))
+            if r is None:
+                return None
+            if isinstance(r, tuple) and r[0] == '__key__':
+                if r[1] == 'F2' and r[2] is not None:
+                    self.save_resource(r[2])
+                    sel = next((n for n, it in enumerate(items) if it[1] == r[2]), 0)
+                elif r[1] == 'F3':
+                    self.save_all_resources()
+                elif r[1] == 'F4':
+                    self.resource_details(r[2])
+                if r[2] is not None:
+                    sel = next((n for n, it in enumerate(items) if it[1] == r[2]), sel)
+                continue
+            off, size, what = self._resource_span(r)
+            if off is None or not size:
+                if r[0] == 'ent':
+                    e = self.info.dotnet_resources[r[1]]['entries'][r[2]]
+                    if e['value'] is not None:          # no offset known: show the whole string
+                        self.list_dialog(e['name'], [(l, None) for l in e['value'].splitlines() or ['']])
+                        continue
+                self.set_msg('%s is not stored in this file' % what, True)
+                continue
+            self.goto(off, 'hex')
+            self.block, self.block_start = (off, min(self.buf.size, off + size)), None
+            self.set_msg('%s: %s selected as block (F2 writes it)' % (what, nbytes(size)))
+            return 'done'
+
+    def _resource_span(self, key):
+        """(file offset, size, display name) of a row key"""
+        if key[0] == 'pe':
+            r = self.info.pe_resources[key[1]]
+            return r['off'], r['size'], '%s %s' % (r['label'], r['name'])
+        r = self.info.dotnet_resources[key[1]]
+        if key[0] == 'res':
+            return r['off'], r['size'], r['name']
+        e = r['entries'][key[2]]
+        return e['off'], len(e['data']) if e['data'] else 0, e['name']
+
+    def _resource_bytes(self, key):
+        """(suggested file name, bytes) of a row key; Windows icons/cursors/bitmaps become .ico/.cur/.bmp."""
+        if key[0] == 'pe':
+            from .formats.peres import export
+            r = self.info.pe_resources[key[1]]
+            ext, data = export(r, self.info.pe_resources, self.buf.read)
+            parts = [r['label'], str(r['name'])] + ([str(r['lang'])] if r['lang'] is not None else [])
+            return '_'.join(parts) + (ext or '.bin'), data
+        r = self.info.dotnet_resources[key[1]]
+        if key[0] == 'res':
+            data = r['data']
+            if data is None and r['off'] is not None:
+                data = self.buf.read(r['off'], r['size'])
+            return r['name'], data
+        e = r['entries'][key[2]]
+        return e['name'] + ('.txt' if e['value'] is not None else '.bin'), e['data']
+
+    @staticmethod
+    def _safe_name(name):
+        return re.sub(r'[\\/:*?"<>|\x00-\x1f]', '_', name).strip('. ') or 'resource'
+
+    def save_resource(self, key):
+        name, data = self._resource_bytes(key)
+        if data is None:
+            self.set_msg('No data to save', True)
+            return
+        path = self.input_dialog('Save %s (%s) to file' % (name, nbytes(len(data))), self._safe_name(name), 70,
+                                 select=True)
+        if not path:
+            return
+        try:
+            with open(os.path.expanduser(path), 'wb') as f:
+                f.write(data)
+        except OSError as e:
+            self.set_msg(str(e), True)
+            return
+        self.set_msg('Saved %s to %s' % (nbytes(len(data)), path))
+
+    @staticmethod
+    def _unique(folder_used, fname):
+        """fname, or fname_2, _3 ... if already used (also for names differing only in case)"""
+        stem, ext = os.path.splitext(fname)
+        k = 1
+        while fname.lower() in folder_used:
+            k += 1
+            fname = '%s_%d%s' % (stem, k, ext)
+        folder_used.add(fname.lower())
+        return fname
+
+    def save_all_resources(self):
+        default = os.path.basename(self.buf.path) + '_resources'
+        d = self.input_dialog('Save all resources into folder', default, 70, select=True)
+        if not d:
+            return
+        d = os.path.expanduser(d)
+        count = 0
+
+        def write(folder, used, name, data):
+            with open(os.path.join(folder, self._unique(used, self._safe_name(name))), 'wb') as f:
+                f.write(data)
+
+        try:
+            os.makedirs(d, exist_ok=True)
+            used = set()
+            if self.info.pe_resources:             # Windows resources go into rsrc/
+                sub = os.path.join(d, 'rsrc')
+                os.makedirs(sub, exist_ok=True)
+                sused = set()
+                for i in range(len(self.info.pe_resources)):
+                    name, data = self._resource_bytes(('pe', i))
+                    if data is not None:
+                        write(sub, sused, name, data)
+                        count += 1
+            for i, r in enumerate(self.info.dotnet_resources):
+                name, data = self._resource_bytes(('res', i))
+                if data is not None:
+                    write(d, used, name, data)
+                    count += 1
+                if r['entries']:      # the entries of a .resources set go into <name>_entries/
+                    sub = os.path.join(d, self._safe_name(r['name']) + '_entries')
+                    os.makedirs(sub, exist_ok=True)
+                    eused = set()
+                    for j in range(len(r['entries'])):
+                        ename, edata = self._resource_bytes(('ent', i, j))
+                        if edata is not None:
+                            write(sub, eused, ename, edata)
+                            count += 1
+        except OSError as e:
+            self.set_msg(str(e), True)
+            return
+        self.set_msg('Saved %d files into %s' % (count, d))
 
     def sections_list(self):
         items = [('%-16s .%08X  %08X  off %08X  %s' % (s.name[:16], s.va, s.vsize, s.off, s.flags),
@@ -1496,6 +1743,7 @@ class Hiew(App):
         self._names = {}
 
     def names_window(self):
+        self.ensure_dotnet(wait=True)
         while True:
             items = []
             for va, nm in sorted(self.info.symbols.items()):

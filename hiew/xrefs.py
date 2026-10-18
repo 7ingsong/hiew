@@ -1,7 +1,7 @@
 """Fast code-reference search.
 
 Disassembling every instruction of a big binary in Python takes tens of seconds
-(libclang: ~15M instructions). Instead, look only at byte patterns that can encode
+(a large library has tens of millions of instructions). Instead, look only at byte patterns that can encode
 a reference to the target and confirm each candidate:
 
   x86     call/jmp rel32 (E8/E9), jcc rel32 (0F 8x), short jumps (EB, 7x, E0-E3),

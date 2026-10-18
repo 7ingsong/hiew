@@ -2,6 +2,7 @@
 import curses
 import os
 import re
+import unicodedata
 
 from . import keys as K
 from .buffer import FileBuffer
@@ -102,9 +103,11 @@ HELP = """\
    Ctrl+BkSp              list of open files (Enter, Del)
    Alt+F10                close file and return to the previous one
    Alt+F4, Ctrl+F4        reload file
-   F8                     header; in it F5 - entry, F6 - sections, F7 - imports,
-                          Enter on a fat-file slice line - switch to it
-                          (Enter - find calls, Ctrl+Enter - next), F9 - exports
+   F8                     header; in it F5 - entry, F6 - sections, F7 - imports
+                          (Enter - find calls, Ctrl+Enter - next), F9 - exports;
+                          Enter on a fat-file slice line - switch to it;
+                          F4 - resources (Windows .rsrc and .NET): Enter - go to data,
+                          F2 - save selected (icons -> .ico, bitmaps -> .bmp), F3 - save all
    F12                    names and comments; in the F12 window - import, Shift+F12 - export
    Shift+F12              name the current location     ; - comment
                           (names and comments are saved to <file>.hnames)
@@ -184,6 +187,33 @@ def parse_hex(s, wildcards=True):
 
 def nbytes(n):
     return '%Xh (%d) bytes' % (n, n) if n >= 10 else '%d byte%s' % (n, '' if n == 1 else 's')
+
+
+def _cw(c):
+    """screen columns of one character: 2 for wide (CJK), 0 for combining marks"""
+    if unicodedata.combining(c):
+        return 0
+    return 2 if unicodedata.east_asian_width(c) in 'WF' else 1
+
+
+def text_width(s):
+    return len(s) if s.isascii() else sum(_cw(c) for c in s)
+
+
+def fit(s, width, pad=False):
+    """s cut to at most width screen columns (wide characters count twice); pad=True fills with spaces"""
+    if s.isascii():
+        r = s[:width]
+        return r.ljust(width) if pad else r
+    out, w = [], 0
+    for c in s:
+        cw = _cw(c)
+        if w + cw > width:
+            break
+        out.append(c)
+        w += cw
+    r = ''.join(out)
+    return r + ' ' * (width - w) if pad else r
 
 
 def clamp(v, lo, hi):
@@ -345,7 +375,7 @@ class App(ExtraMixin):
         if x < 0:
             s = s[-x:]
             x = 0
-        s = s[:self.w - x]
+        s = fit(s, self.w - x)
         try:
             self.scr.addstr(y, x, s, attr)
         except curses.error:
@@ -909,7 +939,7 @@ class App(ExtraMixin):
         A = self.A
         while True:
             view = [it for it in items if flt.lower() in it[0].lower()] if flt else items
-            longest = max((len(t) for t, _ in view), default=0)
+            longest = max((text_width(t) for t, _ in view[:2000]), default=0)
             bw = min(self.w - 2, max(minw, len(title) + 6, longest + 4))
             bh = min(self.h - 2, max(len(view), 1) + 2)
             inner = max(1, bh - 2)
@@ -928,7 +958,7 @@ class App(ExtraMixin):
                     break
                 t, v = view[j]
                 at = A['dlgsel'] if j == sel else (A['dlg'] if v is not None else A['dlghdr'])
-                self.put(y0 + 1 + i, x0 + 1, (' ' + t).ljust(bw - 2)[:bw - 2], at)
+                self.put(y0 + 1 + i, x0 + 1, fit(' ' + t, bw - 2, pad=True), at)
             if flt:
                 self.put(y0 + bh - 1, x0 + 2, ' Filter: %s ' % flt, A['dlgtitle'])
             cnt = ' %d/%d ' % (sel + 1 if view else 0, len(view))

@@ -11,7 +11,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 authors = [{name = "s1ngs0ng", email = "7ingsong@gmail.com"}]
 requires-python = ">=3.9"
-keywords = ["hiew", "hex", "hex-editor", "hex-viewer", "disassembler", "reverse-engineering", "pe", "elf",
+keywords = ["hiew", "hex", "dotnet", "hex-editor", "hex-viewer", "disassembler", "reverse-engineering", "pe", "elf",
             "mach-o", "curses", "tui"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -34,6 +34,7 @@ classifiers = [
 ]
 dependencies = [
     "capstone>=5",
+    "dnfile>=0.15",
     "windows-curses>=2.3; sys_platform == 'win32'",
 ]
 
@@ -50,7 +51,7 @@ Documentation = "https://github.com/7ingsong/hiew#readme"
 hiew = "hiew.__main__:main"
 
 [tool.setuptools]
-packages = ["hiew"]
+packages = ["hiew", "hiew.formats"]
 
 [tool.setuptools.dynamic]
 version = {attr = "hiew.__version__"}

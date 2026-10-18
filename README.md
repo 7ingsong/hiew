@@ -35,11 +35,17 @@ Everything else works without it. From a source checkout: `pip install .`, or `p
 - **Formats:** PE32/PE32+ (x86, x64, ARM, ARM64) with imports and exports; ELF32/64 (LE/BE) with symtab/dynsym,
   GOT slot names, PLT stubs and DT_NEEDED libraries; Mach-O 32/64 and universal (fat) binaries with imports
   (stubs / GOT via the indirect symbol table), exports and libraries; DOS MZ. Other files open as raw data.
+- **Windows resources (.rsrc)**: the type / name / language tree with decoded version info, manifests, string tables
+  and icon groups, in a window opened with F8, then F4. Enter goes to the data, F2 saves the selected resource
+  (icon and cursor groups become real `.ico` / `.cur` files, bitmaps `.bmp`), F3 saves them all.
+- **.NET assemblies** (via [dnfile](https://github.com/malwarefrank/dnfile)): runtime, flags, assembly version, managed
+  entry point, referenced assemblies and `Namespace.Type::Method` names for every method body. Managed resources are
+  listed in the same resources window (F8, then F4), with the strings of `.resources` sets.
 - **Disassembler:** capstone — x86-16/32/64, ARM/Thumb, ARM64, MIPS, PowerPC, RISC-V. Branch targets are shown as
   Hiew addresses (`.00401234`), `[rip+X]` is resolved to an absolute address, ARM64 `adrp` + `add`/`ldr` pairs
   are resolved too. Comments show import and symbol names, `@plt` stubs and the strings (ASCII and UTF-16) the code
   refers to.
 - **Reference search (F6, imports):** byte-pattern scanning confirmed by the disassembler instead of disassembling the
   whole file — x86 `call`/`jmp`/`jcc`, `[rip+X]`, absolute addresses and jump tables; ARM64 B/BL, B.cond, CBZ/TBZ,
-  ADR, literal loads and ADRP pairs. Counts match `otool` on large libraries; about 3 s on a 285 MB `libclang.dylib`.
+  ADR, literal loads and ADRP pairs. Counts match `otool`; a search takes a few seconds even in libraries of several hundred megabytes.
 - **Large files** are memory-mapped and never read into memory as a whole; edits are kept as patches.
